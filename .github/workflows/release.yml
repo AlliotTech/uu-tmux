@@ -27,8 +27,8 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
-      - name: 安装 xcodegen
-        run: brew install xcodegen
+      - name: 安装 xcodegen 与 iTerm2（AppleScript 编译需 iTerm2 术语）
+        run: brew install xcodegen && brew install --cask iterm2
 
       - name: 构建单架构 UUTmux.app 并打包 DMG（ad-hoc 签名，非 Hardened Runtime）
         env:
