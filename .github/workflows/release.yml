@@ -27,8 +27,12 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
-      - name: 安装 xcodegen 与 iTerm2（AppleScript 编译需 iTerm2 术语）
-        run: brew install xcodegen && brew install --cask iterm2
+      - name: 安装 xcodegen 与 iTerm2 并注册（AppleScript 编译需 iTerm2 术语）
+        run: |
+          brew install xcodegen
+          brew install --cask iterm2
+          /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f /Applications/iTerm.app
+          osascript -e 'id of application "iTerm2"' || true
 
       - name: 构建单架构 UUTmux.app 并打包 DMG（ad-hoc 签名，非 Hardened Runtime）
         env:
@@ -48,7 +52,7 @@ jobs:
               ARCHS="$arch" ONLY_ACTIVE_ARCH=NO \
               CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM="" \
               ENABLE_HARDENED_RUNTIME=NO \
-              ENABLE_PREVIEWS=NO build >/dev/null
+              ENABLE_PREVIEWS=NO build
             app="$derived/Build/Products/Release/UUTmux.app"
             [ -d "$app" ] || { echo "未找到 $arch 构建产物 $app" >&2; exit 1; }
             stage="$(mktemp -d)"
