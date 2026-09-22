@@ -52,7 +52,7 @@ final class AppModel {
         // helper 与 AppleScript 随应用分发；从 bundle 解析。
         let res = Bundle.main.resourceURL ?? Bundle.main.bundleURL
         let helper = res.appendingPathComponent("uu-terminal-helper")
-        let script = res.appendingPathComponent("OpenTerminal.scpt")
+        let script = res.appendingPathComponent("OpenTerminal.txt")
         let launcher = ITermLauncher(scriptURL: script, helperURL: helper)
         self.coordinator = SessionCoordinator(backend: backend, launcher: launcher,
                                               operations: OperationStore())
