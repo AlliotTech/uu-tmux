@@ -1,0 +1,16 @@
+.DS_Store
+__pycache__/
+*.pyc
+
+# 密钥与临时产物
+.env
+.env.*
+/tmp/
+
+# Swift / Xcode 生成物（project.yml 为真源，xcodeproj 由 xcodegen 生成）
+native/UUTmux.xcodeproj/
+native/UUTmuxCore/.build/
+native/UUTmuxCore/.swiftpm/
+.build/
+DerivedData/
+build/

@@ -1,0 +1,60 @@
+name: UUTmux
+options:
+  bundleIdPrefix: com.alliottech
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+packages:
+  UUTmuxCore:
+    path: UUTmuxCore
+
+targets:
+  UUTmux:
+    type: application
+    platform: macOS
+    sources:
+      - UUTmuxApp/App
+      - UUTmuxApp/Views
+      - path: UUTmuxApp/Resources
+        excludes:
+          - AppIcon.png
+        buildPhase: resources
+    dependencies:
+      - package: UUTmuxCore
+        product: UUTmuxCore
+      - target: TerminalHelper
+        embed: true
+        codeSign: true
+    info:
+      path: UUTmuxApp/App/Info.plist
+      properties:
+        CFBundleIconFile: AppIcon
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSAppleEventsUsageDescription: UUTmux 需要控制 iTerm2，以打开和定位 UU 终端会话。
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.alliottech.uutmux
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "6.0"
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: NO
+
+  TerminalHelper:
+    type: tool
+    platform: macOS
+    sources:
+      - TerminalHelper
+    dependencies:
+      - package: UUTmuxCore
+        product: UUTmuxCore
+    settings:
+      base:
+        PRODUCT_NAME: uu-terminal-helper
+        PRODUCT_BUNDLE_IDENTIFIER: com.alliottech.uutmux.helper
+        SWIFT_VERSION: "6.0"
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_STYLE: Automatic

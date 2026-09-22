@@ -1,0 +1,74 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "已存在的 tag（如 v0.1.0），仅重新打包发布用"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 解析版本号
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          [ "${{ github.event_name }}" = "workflow_dispatch" ] && TAG="${{ github.event.inputs.tag }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: 安装 xcodegen
+        run: brew install xcodegen
+
+      - name: 构建通用 UUTmux.app（ad-hoc 签名，非 Hardened Runtime）
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          cd native
+          xcodegen generate
+          DERIVED="$(mktemp -d)"
+          xcodebuild -project UUTmux.xcodeproj -scheme UUTmux \
+            -configuration Release -destination 'generic/platform=macOS' \
+            -derivedDataPath "$DERIVED" \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER}" \
+            ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM="" \
+            ENABLE_HARDENED_RUNTIME=NO \
+            ENABLE_PREVIEWS=NO build
+          APP="$DERIVED/Build/Products/Release/UUTmux.app"
+          [ -d "$APP" ] || { echo "未找到构建产物 $APP" >&2; exit 1; }
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          cp -R "$APP" "$GITHUB_WORKSPACE/dist/UUTmux.app"
+
+      - name: 打包 DMG
+        id: dmg
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          STAGE="$(mktemp -d)"
+          cp -R dist/UUTmux.app "$STAGE/UUTmux.app"
+          ln -s /Applications "$STAGE/Applications"
+          DMG="UUTmux-${TAG}.dmg"
+          hdiutil create -volname "UUTmux" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
+          shasum -a 256 "$DMG" | tee "$DMG.sha256"
+          echo "dmg=$DMG" >> "$GITHUB_OUTPUT"
+
+      - name: 发布 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          files: |
+            ${{ steps.dmg.outputs.dmg }}
+            ${{ steps.dmg.outputs.dmg }}.sha256
