@@ -30,45 +30,41 @@ jobs:
       - name: 安装 xcodegen
         run: brew install xcodegen
 
-      - name: 构建通用 UUTmux.app（ad-hoc 签名，非 Hardened Runtime）
+      - name: 构建单架构 UUTmux.app 并打包 DMG（ad-hoc 签名，非 Hardened Runtime）
         env:
           VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
           set -euo pipefail
           cd native
           xcodegen generate
-          DERIVED="$(mktemp -d)"
-          xcodebuild -project UUTmux.xcodeproj -scheme UUTmux \
-            -configuration Release -destination 'generic/platform=macOS' \
-            -derivedDataPath "$DERIVED" \
-            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER}" \
-            ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO \
-            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM="" \
-            ENABLE_HARDENED_RUNTIME=NO \
-            ENABLE_PREVIEWS=NO build
-          APP="$DERIVED/Build/Products/Release/UUTmux.app"
-          [ -d "$APP" ] || { echo "未找到构建产物 $APP" >&2; exit 1; }
-          mkdir -p "$GITHUB_WORKSPACE/dist"
-          cp -R "$APP" "$GITHUB_WORKSPACE/dist/UUTmux.app"
-
-      - name: 打包 DMG
-        id: dmg
-        env:
-          TAG: ${{ steps.version.outputs.tag }}
-        run: |
-          set -euo pipefail
-          STAGE="$(mktemp -d)"
-          cp -R dist/UUTmux.app "$STAGE/UUTmux.app"
-          ln -s /Applications "$STAGE/Applications"
-          DMG="UUTmux-${TAG}.dmg"
-          hdiutil create -volname "UUTmux" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
-          shasum -a 256 "$DMG" | tee "$DMG.sha256"
-          echo "dmg=$DMG" >> "$GITHUB_OUTPUT"
+          build_arch() {
+            arch="$1"
+            derived="$(mktemp -d)"
+            xcodebuild -project UUTmux.xcodeproj -scheme UUTmux \
+              -configuration Release -destination 'generic/platform=macOS' \
+              -derivedDataPath "$derived" \
+              MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER}" \
+              ARCHS="$arch" ONLY_ACTIVE_ARCH=NO \
+              CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM="" \
+              ENABLE_HARDENED_RUNTIME=NO \
+              ENABLE_PREVIEWS=NO build >/dev/null
+            app="$derived/Build/Products/Release/UUTmux.app"
+            [ -d "$app" ] || { echo "未找到 $arch 构建产物 $app" >&2; exit 1; }
+            stage="$(mktemp -d)"
+            cp -R "$app" "$stage/UUTmux.app"
+            ln -s /Applications "$stage/Applications"
+            dmg="$GITHUB_WORKSPACE/UUTmux-${TAG}-${arch}.dmg"
+            hdiutil create -volname "UUTmux" -srcfolder "$stage" -ov -format UDZO "$dmg" >/dev/null
+            shasum -a 256 "$dmg"
+          }
+          build_arch arm64
+          build_arch x86_64
 
       - name: 发布 Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           files: |
-            ${{ steps.dmg.outputs.dmg }}
-            ${{ steps.dmg.outputs.dmg }}.sha256
+            UUTmux-${{ steps.version.outputs.tag }}-arm64.dmg
+            UUTmux-${{ steps.version.outputs.tag }}-x86_64.dmg
