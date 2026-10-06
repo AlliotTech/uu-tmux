@@ -117,6 +117,17 @@ struct ManagerView: View {
             // 只有查询成功且为空才显示空列表。
             ContentUnavailableView("没有会话", systemImage: "terminal",
                                    description: Text("点击“新建”创建第一个会话"))
+        } else if rows.isEmpty, case .socketMissing = model.store.status {
+            // UU 的 tmux server 惰性启动：第一个会话创建时才生成 socket。
+            ContentUnavailableView {
+                Label("UU 服务未启动", systemImage: "terminal")
+            } description: {
+                Text("UU 还没有任何终端会话，服务尚未启动。\n新建第一个会话后即可正常连接。")
+            } actions: {
+                Button("新建首个会话") { showNewSheet = true }
+                    .disabled(model.isBusy)
+                    .buttonStyle(.borderedProminent)
+            }
         } else if rows.isEmpty {
             ContentUnavailableView("暂无数据", systemImage: "hourglass",
                                    description: Text(statusDetail))
@@ -184,7 +195,7 @@ struct ManagerView: View {
         switch model.store.status {
         case .unknown: return "正在连接…"
         case .ok(let n): return "已连接 · \(n) 个会话"
-        case .socketMissing: return "UU 无 socket · 可新建首个会话"
+        case .socketMissing: return "UU 服务未启动 · 新建首个会话即可连接"
         case .cliMissing: return "未找到 UU"
         case .stale(let r): return "暂时无法刷新 · \(r)"
         }

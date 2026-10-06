@@ -75,6 +75,15 @@ final class TmuxBackendTests: XCTestCase {
         XCTAssertEqual(clients[0].pid, 78423)
         XCTAssertEqual(clients[0].flags, "attached,focused,UTF-8")
     }
+
+    func testNonServerRunningMapsToSocketMissing() {
+        XCTAssertEqual(
+            TmuxBackend.classifyFailure(stderr: "no server running on /Users/x/tmux.sock", exitCode: 1),
+            .socketMissing)
+        XCTAssertEqual(
+            TmuxBackend.classifyFailure(stderr: "protocol version mismatch", exitCode: 1),
+            .commandFailed("exit 1: protocol version mismatch"))
+    }
 }
 
 final class ProcessRunnerTests: XCTestCase {

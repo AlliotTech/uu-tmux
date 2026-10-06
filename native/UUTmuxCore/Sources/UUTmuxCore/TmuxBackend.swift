@@ -99,9 +99,16 @@ public struct TmuxBackend: SnapshotProviding, Sendable {
             throw BackendError.commandFailed(String(describing: error))
         }
         guard result.exitCode == 0 else {
-            throw BackendError.commandFailed("exit \(result.exitCode): \(result.stderrText)")
+            throw Self.classifyFailure(stderr: result.stderrText, exitCode: result.exitCode)
         }
         return result.stdoutText
+    }
+
+    /// tmux 在 socket 残留但 server 已死（异常退出）时输出 "no server running"：
+    /// 归入 socketMissing 以保留“新建首个会话即可恢复”的语义，而非误报成无法刷新。
+    static func classifyFailure(stderr: String, exitCode: Int32) -> BackendError {
+        if stderr.contains("no server running") { return .socketMissing }
+        return .commandFailed("exit \(exitCode): \(stderr)")
     }
 
     // MARK: - 格式串

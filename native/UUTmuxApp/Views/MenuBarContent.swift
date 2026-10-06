@@ -29,7 +29,7 @@ struct MenuBarContent: View {
         switch model.store.status {
         case .unknown: return "正在连接…"
         case .ok(let n): return "已连接 · \(n) 个会话"
-        case .socketMissing: return "UU 无 socket · 可新建首个会话"
+        case .socketMissing: return "UU 服务未启动 · 新建首个会话即可连接"
         case .cliMissing: return "未找到 UU"
         case .stale(let r): return "暂时无法刷新 · \(r)"
         }
