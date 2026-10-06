@@ -40,11 +40,22 @@ final class AppModel {
     var autoMirror: Bool {
         didSet { UserDefaults.standard.set(autoMirror, forKey: "autoMirror") }
     }
+    /// 是否在 Dock 栏显示图标，默认隐藏（纯菜单栏应用）。
+    /// 切换用激活策略即时生效，无需重启。
+    var showInDock: Bool {
+        didSet {
+            UserDefaults.standard.set(showInDock, forKey: "showInDock")
+            NSApp.setActivationPolicy(showInDock ? .regular : .accessory)
+        }
+    }
     private let backend: TmuxBackend
     private var refreshTask: Task<Void, Never>?
 
     init() {
         self.autoMirror = UserDefaults.standard.bool(forKey: "autoMirror")
+        self.showInDock = UserDefaults.standard.bool(forKey: "showInDock")
+        // init 赋值不触发 didSet，激活策略在此显式应用。
+        NSApp.setActivationPolicy(UserDefaults.standard.bool(forKey: "showInDock") ? .regular : .accessory)
         let backend = TmuxBackend(config: .standard())
         self.backend = backend
         self.store = SessionStore(backend: backend)

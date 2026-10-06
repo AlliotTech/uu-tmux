@@ -33,6 +33,7 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSAppleEventsUsageDescription: UUTmux 需要控制 iTerm2，以打开和定位 UU 终端会话。
+        LSUIElement: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.alliottech.uutmux
