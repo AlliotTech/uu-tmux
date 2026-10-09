@@ -16,9 +16,10 @@ struct UUTmuxApp: App {
         .menuBarExtraStyle(.menu)
 
         // 可调整大小的管理窗口。
-        Window("UU 会话", id: "manager") {
+        Window("UU 会话", id: ManagerWindow.id) {
             ManagerView(model: model)
                 .frame(minWidth: 640, minHeight: 400)
+                .background(ManagerWindowAccess())
         }
         .defaultSize(width: 760, height: 480)
     }

@@ -17,7 +17,7 @@ struct MenuBarContent: View {
 
         Divider()
 
-        Button("打开管理窗口") { openWindow(id: "manager") }
+        Button("打开管理窗口") { ManagerWindow.open(using: openWindow) }
         Button("刷新") { model.refreshNow() }
         Toggle("为外部新会话自动开窗", isOn: Bindable(model).autoMirror)
         Toggle("在 Dock 栏显示", isOn: Bindable(model).showInDock)
